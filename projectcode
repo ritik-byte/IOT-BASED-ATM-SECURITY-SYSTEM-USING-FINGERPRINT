@@ -1,0 +1,140 @@
+#include <Adafruit_Fingerprint.h>
+ 
+#include <LiquidCrystal.h>
+#include <Keypad.h>
+#define Password_Length 5
+
+char Data[Password_Length];
+char Master[Password_Length]="1432";
+
+char customkey;
+byte data_count=0;
+char customKey;
+const byte ROWS = 4; // rows
+const byte COLS = 4; // columns
+//define the symbols on the buttons of the keypads
+char keys[ROWS][COLS] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+byte rowPins[ROWS] = {11, 10, 9, 8}; //connect to the row pinouts of the keypad
+
+byte colPins[COLS] = {7, 6, 5, 4}; //connect to the column pinouts of the keypad
+
+// initialize the library with the numbers of the interface pins
+SoftwareSerial mySerial(2, 3);
+LiquidCrystal lcd(A0, A1, A2 , A3 , A4 , A5 );
+ 
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
+
+//initialize an instance of class NewKeypad
+Keypad customkeypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+ 
+String listNames[] = {"1","2","3","4"};
+ 
+void setup()  
+{
+  lcd.begin(16, 2);
+  Serial.begin(9600);
+
+  delay(100);
+  lcd.print("Put your finger");
+  delay(1000);
+  lcd.clear();
+ 
+  finger.begin(57600);
+  
+  
+  if (finger.verifyPassword()) {
+    Serial.println("Found fingerprint sensor!");
+  } else {
+    Serial.println("Did not find fingerprint sensor :");
+    while (1) { delay(1); }
+  }
+ 
+  finger.getTemplateCount();
+  lcd.print("Sensor contains "); lcd.print(finger.templateCount); lcd.println(" templates");
+  Serial.print("Sensor contains "); Serial.print(finger.templateCount);Serial.println(" templates");
+  delay(1000);
+  lcd.clear();
+  lcd.println("Waiting for valid finger...\n");
+  Serial.println("Waiting for valid finger...\n");
+  delay(1000);
+  lcd.clear();
+}
+ 
+void loop()                    
+{
+  
+  
+  getFingerprintIDez();
+  delay(100);
+//  lcd.print("scan finger");
+//  delay(1000);            
+}
+ 
+
+int getFingerprintIDez() {
+//  Keypad customKeypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+  uint8_t p = finger.getImage();
+  if (p != FINGERPRINT_OK)  return -1;
+ 
+  p = finger.image2Tz();
+  if (p != FINGERPRINT_OK)  return -1;
+ 
+  p = finger.fingerFastSearch();
+  if (p != FINGERPRINT_OK){  
+    lcd.print("Unregistered Fingerprint !");
+    Serial.print("Unregistered Fingerprint !");
+  }
+  else if(p == FINGERPRINT_OK){
+    lcd.print("finger match" + listNames[finger.fingerID]);
+    Serial.print("finger match" + listNames[finger.fingerID]);
+    delay(1000);
+    Serial.println("Enter your password");
+    Keypad customKeypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+    while(data_count<4){
+      customKey=customKeypad.getKey();
+      if(customKey){
+        Data[data_count]=customKey;
+        data_count++;}
+        if(data_count==Password_Length-1){
+          if(!strcmp(Data, Master)){
+            digitalWrite(13,HIGH);
+            digitalWrite(12,HIGH);
+             delay(3000);
+            digitalWrite(13,LOW);
+            digitalWrite(12,LOW);
+            Serial.println("Transaction Complete");
+            
+           delay(1000);
+          }
+         }
+         
+    }
+    
+    }
+    
+//    digitalWrite(13,HIGH);
+//    delay(3000);
+//    digitalWrite(13,LOW);
+//    delay(1000);
+//    lcd.print("scan");
+    delay(1000);
+    lcd.clear();
+//    delay(2000);
+//  }
+
+//  else if(p == FINGERPRINT_NOFINGER){
+//    lcd.print("scan finger");
+//    return p;
+//  }
+
+  delay(2000);
+  lcd.clear();
+//  lcd.print("scan finger");
+ 
+  return finger.fingerID; 
+}
